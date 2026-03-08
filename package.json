@@ -1,0 +1,15 @@
+{
+  "name": "nova-dust-bot",
+  "version": "1.0.0",
+  "description": "Nova-Dust Survivor RPG Discord Bot",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.12.0",
+    "pg": "^8.12.0",
+    "dotenv": "^16.3.0"
+  }
+}
