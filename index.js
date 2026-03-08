@@ -1,7 +1,10 @@
 import express from "express";
 import { Client, GatewayIntentBits, Collection } from "discord.js";
 import fs from "fs";
+import fsPromises from "fs/promises";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { initDB } from "./database/db.js";
 
 // -------------------------
@@ -37,49 +40,57 @@ const client = new Client({
 // Command loader
 // -------------------------
 client.commands = new Collection();
-import fsPromises from "fs/promises";
-const commandFiles = await fsPromises.readdir("./commands");
 
-for (const file of commandFiles) {
-  if (file.endsWith(".js")) {
-    const command = await import(`./commands/${file}`);
-    client.commands.set(command.default.name, command.default);
+async function loadCommands() {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  const commandFiles = await fsPromises.readdir(path.join(__dirname, "commands"));
+  for (const file of commandFiles) {
+    if (file.endsWith(".js")) {
+      const { default: command } = await import(`./commands/${file}`);
+      client.commands.set(command.name, command);
+      console.log(`Loaded command: ${command.name}`);
+    }
   }
 }
 
 // -------------------------
-// Database init
+// Initialize DB + Commands
 // -------------------------
-await initDB();
+(async () => {
+  await initDB();
+  await loadCommands();
 
-// -------------------------
-// Message listener
-// -------------------------
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
+  // -------------------------
+  // Message listener
+  // -------------------------
+  client.on("messageCreate", async (message) => {
+    if (message.author.bot) return;
 
-  const prefix = "!";
-  if (!message.content.startsWith(prefix)) return;
+    const prefix = "!";
+    if (!message.content.startsWith(prefix)) return;
 
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const commandName = args.shift().toLowerCase();
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
+    const commandName = args.shift().toLowerCase();
 
-  const command = client.commands.get(commandName);
-  if (!command) return;
+    const command = client.commands.get(commandName);
+    if (!command) return;
 
-  try {
-    await command.execute(client, message, args);
-  } catch (err) {
-    console.error(err);
-    message.reply("There was an error executing that command.");
-  }
-});
+    try {
+      await command.execute(client, message, args);
+    } catch (err) {
+      console.error(err);
+      message.reply("There was an error executing that command.");
+    }
+  });
 
-// -------------------------
-// Login
-// -------------------------
-client.once("ready", () => {
-  console.log(`${client.user.tag} online in Nova-Dust wasteland`);
-});
+  // -------------------------
+  // Login
+  // -------------------------
+  client.once("ready", () => {
+    console.log(`${client.user.tag} online in Nova-Dust wasteland`);
+  });
 
-client.login(process.env.DISCORD_TOKEN);
+  client.login(process.env.DISCORD_TOKEN);
+})();
