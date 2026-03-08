@@ -1,5 +1,5 @@
 export default {
-  name: "help",
+  name: "helpc",
   description: "Displays a list of all available commands and their usage",
   async execute(client, message, args) {
     if (!client.commands) return message.reply("No commands loaded.");
