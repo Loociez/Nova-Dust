@@ -1,13 +1,29 @@
+import express from "express";
 import { Client, GatewayIntentBits, Collection } from "discord.js";
 import fs from "fs";
 import dotenv from "dotenv";
 import { initDB } from "./database/db.js";
 
+// -------------------------
+// Tiny web server for Render Free
+// -------------------------
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("Nova-Dust bot running!");
+});
+
+app.listen(PORT, () => {
+  console.log(`Web server listening on port ${PORT}`);
+});
+
+// -------------------------
+// Discord bot setup
+// -------------------------
 dotenv.config();
 
 const config = JSON.parse(fs.readFileSync("./config.json"));
-
-dotenv.config();
 
 const client = new Client({
   intents: [
