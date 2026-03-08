@@ -42,55 +42,70 @@ const client = new Client({
 client.commands = new Collection();
 
 async function loadCommands() {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
-  const commandFiles = await fsPromises.readdir(path.join(__dirname, "commands"));
-  for (const file of commandFiles) {
-    if (file.endsWith(".js")) {
-      const { default: command } = await import(`./commands/${file}`);
-      client.commands.set(command.name, command);
-      console.log(`Loaded command: ${command.name}`);
+    const commandFiles = await fsPromises.readdir(path.join(__dirname, "commands"));
+    for (const file of commandFiles) {
+      if (file.endsWith(".js")) {
+        const { default: command } = await import(`./commands/${file}`);
+        client.commands.set(command.name, command);
+        console.log(`Loaded command: ${command.name}`);
+      }
     }
+  } catch (err) {
+    console.error("Error loading commands:", err);
   }
 }
 
 // -------------------------
-// Initialize DB + Commands
+// Initialize DB + Commands + Login
 // -------------------------
 (async () => {
-  await initDB();
-  await loadCommands();
+  try {
+    console.log("Initializing database...");
+    await initDB();
+    console.log("Database initialized.");
 
-  // -------------------------
-  // Message listener
-  // -------------------------
-  client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
+    await loadCommands();
+    console.log(`Total commands loaded: ${client.commands.size}`);
 
-    const prefix = "!";
-    if (!message.content.startsWith(prefix)) return;
+    // -------------------------
+    // Message listener
+    // -------------------------
+    client.on("messageCreate", async (message) => {
+      if (message.author.bot) return;
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
+      const prefix = "!";
+      if (!message.content.startsWith(prefix)) return;
 
-    const command = client.commands.get(commandName);
-    if (!command) return;
+      const args = message.content.slice(prefix.length).trim().split(/ +/);
+      const commandName = args.shift().toLowerCase();
 
-    try {
-      await command.execute(client, message, args);
-    } catch (err) {
-      console.error(err);
-      message.reply("There was an error executing that command.");
-    }
-  });
+      const command = client.commands.get(commandName);
+      if (!command) return;
 
-  // -------------------------
-  // Login
-  // -------------------------
-  client.once("ready", () => {
-    console.log(`${client.user.tag} online in Nova-Dust wasteland`);
-  });
+      try {
+        await command.execute(client, message, args);
+      } catch (err) {
+        console.error("Command execution error:", err);
+        message.reply("There was an error executing that command.");
+      }
+    });
 
-  client.login(process.env.DISCORD_TOKEN);
+    // -------------------------
+    // Login
+    // -------------------------
+    console.log("Logging in to Discord...");
+    await client.login(process.env.DISCORD_TOKEN);
+    console.log("Login promise resolved.");
+
+    client.once("ready", () => {
+      console.log(`${client.user.tag} online in Nova-Dust wasteland`);
+    });
+
+  } catch (err) {
+    console.error("Initialization error:", err);
+  }
 })();
