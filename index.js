@@ -33,23 +33,35 @@ const client = new Client({
   ]
 });
 
+// -------------------------
+// Command loader
+// -------------------------
 client.commands = new Collection();
+import fsPromises from "fs/promises";
+const commandFiles = await fsPromises.readdir("./commands");
 
-const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"));
 for (const file of commandFiles) {
-  const command = await import(`./commands/${file}`);
-  client.commands.set(command.default.name, command.default);
+  if (file.endsWith(".js")) {
+    const command = await import(`./commands/${file}`);
+    client.commands.set(command.default.name, command.default);
+  }
 }
 
-client.once("ready", async () => {
-  console.log(`${client.user.tag} online in Nova-Dust wasteland`);
-  await initDB();
-});
+// -------------------------
+// Database init
+// -------------------------
+await initDB();
 
+// -------------------------
+// Message listener
+// -------------------------
 client.on("messageCreate", async (message) => {
-  if (message.author.bot || !message.content.startsWith(config.prefix)) return;
+  if (message.author.bot) return;
 
-  const args = message.content.slice(config.prefix.length).trim().split(/ +/);
+  const prefix = "!";
+  if (!message.content.startsWith(prefix)) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
   const command = client.commands.get(commandName);
@@ -59,8 +71,15 @@ client.on("messageCreate", async (message) => {
     await command.execute(client, message, args);
   } catch (err) {
     console.error(err);
-    message.reply("Error executing command.");
+    message.reply("There was an error executing that command.");
   }
+});
+
+// -------------------------
+// Login
+// -------------------------
+client.once("ready", () => {
+  console.log(`${client.user.tag} online in Nova-Dust wasteland`);
 });
 
 client.login(process.env.DISCORD_TOKEN);

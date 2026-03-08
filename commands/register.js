@@ -6,7 +6,6 @@ const config = JSON.parse(fs.readFileSync("./config.json"));
 export default {
   name: "register",
   async execute(client, message) {
-
     const exists = await query("SELECT * FROM users WHERE id=$1", [message.author.id]);
 
     if (exists.rows.length) {
