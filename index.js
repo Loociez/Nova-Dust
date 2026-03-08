@@ -2,7 +2,9 @@ import { Client, GatewayIntentBits, Collection } from "discord.js";
 import fs from "fs";
 import dotenv from "dotenv";
 import { initDB } from "./database/db.js";
-import config from "./config.json" assert { type: "json" };
+import fs from "fs";
+
+const config = JSON.parse(fs.readFileSync("./config.json"));
 
 dotenv.config();
 
